@@ -52,6 +52,14 @@ async function setup() {
     charset: 'utf8mb4'
   });
 
+  // Migration: add seat_number column to tickets if it doesn't exist yet
+  try {
+    await conn.query('ALTER TABLE tickets ADD COLUMN seat_number INT NOT NULL DEFAULT 0');
+    console.log('Migration: added seat_number column to tickets.');
+  } catch (e) {
+    if (e.code !== 'ER_DUP_FIELDNAME') throw e;
+  }
+
   // Seed cities
   const [existing] = await conn.query('SELECT COUNT(*) AS cnt FROM cities');
   if (existing[0].cnt === 0) {

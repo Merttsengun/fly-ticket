@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Giriş Yap</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
+  <a href="register.html">Kayıt Ol</a>
+</nav>
+
+<div class="admin-login-wrap">
+  <div class="admin-login-card">
+    <h2>Giriş Yap</h2>
+    <div id="alert-box"></div>
+    <form class="form-stack" id="login-form">
+
+      <div class="form-group">
+        <label for="email">E-posta</label>
+        <input type="email" id="email" placeholder="ornek@mail.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Şifre</label>
+        <input type="password" id="password" placeholder="Şifreniz" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full mt-1" id="submit-btn">Giriş Yap</button>
+
+      <p style="text-align:center;font-size:0.85rem;color:var(--muted);margin-top:0.5rem">
+        Hesabın yok mu? <a href="register.html" style="color:var(--primary);font-weight:600">Kayıt Ol</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+
+  // Already logged in → redirect
+  if (localStorage.getItem('flyticket_user_token')) location.href = 'index.html';
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const alertEl = document.getElementById('alert-box');
+    const btn     = document.getElementById('submit-btn');
+
+    btn.disabled = true;
+    btn.textContent = 'Giriş yapılıyor...';
+
+    const res  = await fetch(API + '/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email:    document.getElementById('email').value.trim(),
+        password: document.getElementById('password').value
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem('flyticket_user_token', data.token);
+      localStorage.setItem('flyticket_user_name',  `${data.user.name} ${data.user.surname}`);
+      localStorage.setItem('flyticket_user_email', data.user.email);
+
+      // Redirect to originally requested page or index
+      const next = new URLSearchParams(window.location.search).get('next') || 'index.html';
+      location.href = next;
+    } else {
+      alertEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Giriş Yap';
+    }
+  });
+</script>
+</body>
+</html>

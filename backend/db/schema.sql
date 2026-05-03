@@ -6,7 +6,13 @@ CREATE TABLE IF NOT EXISTS cities (
   name VARCHAR(100) NOT NULL UNIQUE
 );
 
--- Generated columns allow enforcing the "same hour" uniqueness rule at DB level
+CREATE TABLE IF NOT EXISTS airlines (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL UNIQUE,
+  code VARCHAR(10) NOT NULL UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS flights (
   id INT AUTO_INCREMENT PRIMARY KEY,
   flight_number VARCHAR(20) NOT NULL UNIQUE,
@@ -17,16 +23,24 @@ CREATE TABLE IF NOT EXISTS flights (
   price DECIMAL(10, 2) NOT NULL,
   seats_total INT NOT NULL DEFAULT 100,
   seats_available INT NOT NULL DEFAULT 100,
-  -- Generated columns for hour-level uniqueness (MySQL 5.7+)
+  airline_id INT DEFAULT NULL,
   departure_hour_slot VARCHAR(20) AS (DATE_FORMAT(departure_time, '%Y%m%d%H')) STORED,
   arrival_hour_slot VARCHAR(20) AS (DATE_FORMAT(arrival_time, '%Y%m%d%H')) STORED,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (departure_city_id) REFERENCES cities(id),
   FOREIGN KEY (arrival_city_id) REFERENCES cities(id),
-  -- Business rule: no two flights from same city in same hour
+  FOREIGN KEY (airline_id) REFERENCES airlines(id) ON DELETE SET NULL,
   UNIQUE KEY uq_departure_slot (departure_city_id, departure_hour_slot),
-  -- Business rule: no two flights arriving at same city in same hour
   UNIQUE KEY uq_arrival_slot (arrival_city_id, arrival_hour_slot)
+);
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  surname VARCHAR(100) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password_hash VARCHAR(255) NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS tickets (
@@ -36,8 +50,12 @@ CREATE TABLE IF NOT EXISTS tickets (
   passenger_surname VARCHAR(100) NOT NULL,
   passenger_email VARCHAR(255) NOT NULL,
   booking_reference VARCHAR(10) NOT NULL UNIQUE,
+  seat_number INT NOT NULL DEFAULT 0,
+  user_id INT DEFAULT NULL,
   booked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  FOREIGN KEY (flight_id) REFERENCES flights(id) ON DELETE CASCADE
+  FOREIGN KEY (flight_id) REFERENCES flights(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+  UNIQUE KEY uq_flight_seat (flight_id, seat_number)
 );
 
 CREATE TABLE IF NOT EXISTS admins (

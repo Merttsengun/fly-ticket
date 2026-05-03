@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Kayıt Ol</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
+  <a href="login.html">Giriş Yap</a>
+</nav>
+
+<div class="admin-login-wrap">
+  <div class="admin-login-card" style="max-width:420px">
+    <h2>Kayıt Ol</h2>
+    <div id="alert-box"></div>
+    <form class="form-stack" id="register-form">
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem">
+        <div class="form-group">
+          <label for="name">Ad</label>
+          <input type="text" id="name" placeholder="Adınız" required>
+        </div>
+        <div class="form-group">
+          <label for="surname">Soyad</label>
+          <input type="text" id="surname" placeholder="Soyadınız" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="email">E-posta</label>
+        <input type="email" id="email" placeholder="ornek@mail.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Şifre</label>
+        <input type="password" id="password" placeholder="En az 6 karakter" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password2">Şifre Tekrar</label>
+        <input type="password" id="password2" placeholder="Şifrenizi tekrar girin" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full mt-1" id="submit-btn">Kayıt Ol</button>
+
+      <p style="text-align:center;font-size:0.85rem;color:var(--muted);margin-top:0.5rem">
+        Zaten hesabın var mı? <a href="login.html" style="color:var(--primary);font-weight:600">Giriş Yap</a>
+      </p>
+    </form>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+
+  // Already logged in → redirect
+  if (localStorage.getItem('flyticket_user_token')) location.href = 'index.html';
+
+  document.getElementById('register-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const alertEl = document.getElementById('alert-box');
+    const btn     = document.getElementById('submit-btn');
+
+    const name     = document.getElementById('name').value.trim();
+    const surname  = document.getElementById('surname').value.trim();
+    const email    = document.getElementById('email').value.trim();
+    const password = document.getElementById('password').value;
+    const password2 = document.getElementById('password2').value;
+
+    if (password !== password2) {
+      alertEl.innerHTML = '<div class="alert alert-error">Şifreler eşleşmiyor.</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor...';
+
+    const res  = await fetch(API + '/api/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, surname, email, password })
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      alertEl.innerHTML = '<div class="alert alert-success">Kayıt başarılı! Giriş sayfasına yönlendiriliyorsunuz...</div>';
+      setTimeout(() => location.href = 'login.html', 1500);
+    } else {
+      alertEl.innerHTML = `<div class="alert alert-error">${data.error}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Kayıt Ol';
+    }
+  });
+</script>
+</body>
+</html>

@@ -98,6 +98,18 @@ nav a:hover { color: var(--white); }
   .search-grid { grid-template-columns: 1fr; }
 }
 
+.search-grid-5 {
+  grid-template-columns: 1fr 1fr 1fr 1fr auto;
+}
+
+@media (max-width: 860px) {
+  .search-grid-5 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 480px) {
+  .search-grid-5 { grid-template-columns: 1fr; }
+}
+
 /* ── FORM ELEMENTS ── */
 .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
 
@@ -226,6 +238,18 @@ input:focus, select:focus {
   text-align: right;
 }
 
+.badge-full {
+  background: #fee2e2;
+  color: var(--danger);
+  border: 1.5px solid #fca5a5;
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  align-self: center;
+}
+
 /* ── BOOKING PAGE ── */
 .page-wrapper {
   max-width: 560px;
@@ -341,26 +365,41 @@ input:focus, select:focus {
 }
 
 .sidebar {
-  background: var(--white);
-  border-right: 1px solid var(--border);
-  padding: 1.5rem 1rem;
+  background: #1e293b;
+  padding: 2rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 
-.sidebar nav { display: flex; flex-direction: column; gap: 0.4rem; }
+.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
 
 .sidebar nav a {
   display: block;
-  padding: 0.6rem 0.9rem;
-  border-radius: 7px;
+  padding: 0.75rem 1.1rem;
+  border-radius: 8px;
   text-decoration: none;
-  color: var(--text);
-  font-size: 0.9rem;
+  color: #94a3b8;
+  font-size: 0.92rem;
   font-weight: 500;
-  transition: background 0.15s;
+  letter-spacing: 0.01em;
+  transition: background 0.15s, color 0.15s;
 }
 
-.sidebar nav a:hover,
-.sidebar nav a.active { background: #eff6ff; color: var(--primary); }
+.sidebar nav a:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+.sidebar nav a.active {
+  background: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
 
 .admin-content { padding: 2rem; }
 
@@ -371,17 +410,21 @@ input:focus, select:focus {
 }
 
 /* ── TABLE ── */
-.table-wrap { overflow-x: auto; }
+.table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
 
 table {
   width: 100%;
   border-collapse: collapse;
   background: var(--white);
-  border-radius: var(--radius);
-  overflow: hidden;
-  box-shadow: var(--shadow);
   font-size: 0.88rem;
 }
+
+thead tr:first-child th:first-child { border-radius: var(--radius) 0 0 0; }
+thead tr:first-child th:last-child  { border-radius: 0 var(--radius) 0 0; }
 
 thead { background: var(--primary); color: var(--white); }
 thead th { padding: 0.75rem 1rem; text-align: left; font-weight: 600; }
@@ -456,3 +499,266 @@ tbody td { padding: 0.7rem 1rem; vertical-align: middle; }
 
 .badge-green { background: #dcfce7; color: var(--success); }
 .badge-red   { background: #fee2e2; color: var(--danger); }
+
+.airline-badge {
+  display: inline-block;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── MY TICKETS ── */
+.my-ticket-card {
+  background: var(--white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  border-left: 4px solid var(--primary);
+  flex-wrap: wrap;
+}
+
+.ticket-past {
+  border-left-color: var(--muted);
+  opacity: 0.75;
+}
+
+.my-ticket-left  { flex: 1; min-width: 200px; }
+.my-ticket-right { text-align: center; flex-shrink: 0; }
+
+/* ── STEPS BAR ── */
+.steps-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 1.5rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.step-circle {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+}
+
+.step span {
+  font-size: 0.75rem;
+  color: var(--muted);
+  font-weight: 500;
+  transition: color 0.3s;
+}
+
+.step.active .step-circle {
+  background: var(--primary);
+  color: white;
+}
+
+.step.active span { color: var(--primary); font-weight: 700; }
+
+.step-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  min-width: 60px;
+  margin: 0 8px;
+  margin-bottom: 1.5rem;
+}
+
+/* ── PAYMENT ── */
+.payment-summary {
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.payment-summary-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.pay-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,0.4);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── SEAT MAP ── */
+.seat-map-container {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 0.6rem;
+}
+
+.seat-map-legend {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+.selected-seats-info {
+  font-size: 0.85rem;
+  min-height: 1.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.seat-map-scroll { overflow-x: auto; }
+
+.seat-plane { display: inline-block; min-width: 100%; }
+
+.seat-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.seat-row-num {
+  width: 22px;
+  text-align: right;
+  font-size: 0.7rem;
+  color: var(--muted);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.seat-col-hdr {
+  width: 32px;
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.seat-aisle { width: 14px; flex-shrink: 0; }
+
+.seat {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px 4px 6px 6px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.seat::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 6px;
+  right: 6px;
+  height: 4px;
+  border-radius: 2px 2px 0 0;
+}
+
+.seat-available { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+.seat-available::before { background: #86efac; }
+.seat-available:hover { background: #16a34a; color: white; border-color: #16a34a; transform: scale(1.08); }
+.seat-available:hover::before { background: #15803d; }
+
+.seat-taken { background: #e5e7eb; color: #9ca3af; cursor: not-allowed; border: 1px solid #d1d5db; }
+.seat-taken::before { background: #d1d5db; }
+
+.seat-selected { background: var(--primary); color: white; border: 1px solid var(--primary-dark); }
+.seat-selected::before { background: var(--primary-dark); }
+.seat-selected:hover { background: var(--primary-dark); border-color: var(--primary-dark); transform: scale(1.05); }
+
+.seat-empty { width: 32px; height: 32px; flex-shrink: 0; }
+
+/* ── SUCCESS PAGE – REFS BOX ── */
+.refs-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.booking-ref-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #eff6ff;
+  border-radius: 8px;
+  padding: 0.65rem 1rem;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ref-code-display {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--primary);
+  letter-spacing: 2px;
+}
+
+.seat-tag {
+  background: var(--primary);
+  color: white;
+  padding: 0.25rem 0.65rem;
+  border-radius: 20px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+}

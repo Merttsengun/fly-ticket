@@ -24,25 +24,28 @@ async function hasConflict(conn, cityId, activityTime, excludeId = null) {
   return rows.length > 0;
 }
 
-// GET /api/flights?from=&to=&date=
+// GET /api/flights?from=&to=&date=&airline=
 router.get('/', async (req, res) => {
   try {
-    const { from, to, date } = req.query;
+    const { from, to, date, airline } = req.query;
     const showAll = req.query.all === 'true';
     let sql = `
       SELECT f.id, f.flight_number, f.departure_time, f.arrival_time,
              f.price, f.seats_available, f.seats_total,
-             dc.name AS departure_city, ac.name AS arrival_city
+             dc.name AS departure_city, ac.name AS arrival_city,
+             al.id AS airline_id, al.name AS airline_name, al.code AS airline_code
       FROM flights f
       JOIN cities dc ON f.departure_city_id = dc.id
       JOIN cities ac ON f.arrival_city_id = ac.id
-      ${showAll ? 'WHERE 1=1' : 'WHERE f.seats_available > 0'}
+      LEFT JOIN airlines al ON f.airline_id = al.id
+      WHERE 1=1
     `;
     const params = [];
 
-    if (from) { sql += ' AND f.departure_city_id = ?'; params.push(from); }
-    if (to)   { sql += ' AND f.arrival_city_id = ?';   params.push(to); }
-    if (date) { sql += ' AND DATE(f.departure_time) = ?'; params.push(date); }
+    if (from)    { sql += ' AND f.departure_city_id = ?'; params.push(from); }
+    if (to)      { sql += ' AND f.arrival_city_id = ?';   params.push(to); }
+    if (date)    { sql += ' AND DATE(f.departure_time) = ?'; params.push(date); }
+    if (airline) { sql += ' AND f.airline_id = ?'; params.push(airline); }
 
     sql += ' ORDER BY f.departure_time';
     const [rows] = await db.query(sql, params);
@@ -58,10 +61,12 @@ router.get('/:id', async (req, res) => {
     const [rows] = await db.query(`
       SELECT f.id, f.flight_number, f.departure_time, f.arrival_time,
              f.price, f.seats_available, f.seats_total,
-             dc.name AS departure_city, ac.name AS arrival_city
+             dc.name AS departure_city, ac.name AS arrival_city,
+             al.id AS airline_id, al.name AS airline_name, al.code AS airline_code
       FROM flights f
       JOIN cities dc ON f.departure_city_id = dc.id
       JOIN cities ac ON f.arrival_city_id = ac.id
+      LEFT JOIN airlines al ON f.airline_id = al.id
       WHERE f.id = ?
     `, [req.params.id]);
 
@@ -72,15 +77,31 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// GET /api/flights/:id/taken-seats — returns array of taken seat numbers for a flight
+router.get('/:id/taken-seats', async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      'SELECT seat_number FROM tickets WHERE flight_id = ?',
+      [req.params.id]
+    );
+    res.json(rows.map(r => r.seat_number));
+  } catch (err) {
+    res.status(500).json({ error: 'Database error' });
+  }
+});
+
 // POST /api/flights  (admin only)
 router.post('/', requireAdmin, async (req, res) => {
-  const { flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total } = req.body;
+  const { flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, airline_id } = req.body;
 
   if (!flight_number || !departure_city_id || !arrival_city_id || !departure_time || !arrival_time || !price) {
     return res.status(400).json({ error: 'Tüm alanlar zorunludur' });
   }
   if (departure_city_id === arrival_city_id) {
     return res.status(400).json({ error: 'Kalkış ve varış şehri aynı olamaz' });
+  }
+  if (new Date(arrival_time) <= new Date(departure_time)) {
+    return res.status(400).json({ error: 'Varış zamanı kalkış zamanından sonra olmalıdır' });
   }
 
   const conn = await db.getConnection();
@@ -104,9 +125,9 @@ router.post('/', requireAdmin, async (req, res) => {
     const seats = seats_total || 100;
     const [result] = await conn.query(`
       INSERT INTO flights
-        (flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, seats_available)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `, [flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats, seats]);
+        (flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, seats_available, airline_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats, seats, airline_id || null]);
 
     await conn.commit();
     res.status(201).json({ id: result.insertId, message: 'Flight created' });
@@ -123,11 +144,14 @@ router.post('/', requireAdmin, async (req, res) => {
 
 // PUT /api/flights/:id  (admin only)
 router.put('/:id', requireAdmin, async (req, res) => {
-  const { flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total } = req.body;
+  const { flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, airline_id } = req.body;
   const id = parseInt(req.params.id);
 
   if (departure_city_id === arrival_city_id) {
     return res.status(400).json({ error: 'Kalkış ve varış şehri aynı olamaz' });
+  }
+  if (new Date(arrival_time) <= new Date(departure_time)) {
+    return res.status(400).json({ error: 'Varış zamanı kalkış zamanından sonra olmalıdır' });
   }
 
   const conn = await db.getConnection();
@@ -151,9 +175,9 @@ router.put('/:id', requireAdmin, async (req, res) => {
     const [result] = await conn.query(`
       UPDATE flights
       SET flight_number = ?, departure_city_id = ?, arrival_city_id = ?,
-          departure_time = ?, arrival_time = ?, price = ?, seats_total = ?
+          departure_time = ?, arrival_time = ?, price = ?, seats_total = ?, airline_id = ?
       WHERE id = ?
-    `, [flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, id]);
+    `, [flight_number, departure_city_id, arrival_city_id, departure_time, arrival_time, price, seats_total, airline_id || null, id]);
 
     await conn.commit();
     if (result.affectedRows === 0) return res.status(404).json({ error: 'Flight not found' });

@@ -19,6 +19,7 @@
     <nav>
       <a href="#" class="active" id="tab-flights" onclick="showTab('flights');return false">&#9992; Uçuşlar</a>
       <a href="#" id="tab-tickets" onclick="showTab('tickets');return false">&#127903; Biletler</a>
+      <a href="#" id="tab-airlines" onclick="showTab('airlines');return false">&#127968; Firmalar</a>
     </nav>
   </aside>
 
@@ -36,6 +37,7 @@
           <thead>
             <tr>
               <th>Uçuş No</th>
+              <th>Havayolu</th>
               <th>Nereden</th>
               <th>Nereye</th>
               <th>Kalkış</th>
@@ -46,7 +48,31 @@
             </tr>
           </thead>
           <tbody id="flights-body">
-            <tr><td colspan="8" class="empty-state">Yükleniyor...</td></tr>
+            <tr><td colspan="9" class="empty-state">Yükleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- AIRLINES TAB -->
+    <div id="airlines-tab" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+        <h1>Havayolu Firmaları</h1>
+        <button class="btn btn-primary" onclick="openAirlineModal()">+ Yeni Firma</button>
+      </div>
+      <div id="airlines-alert"></div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Kod</th>
+              <th>Firma Adı</th>
+              <th>Uçuş Sayısı</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="airlines-body">
+            <tr><td colspan="4" class="empty-state">Yükleniyor...</td></tr>
           </tbody>
         </table>
       </div>
@@ -64,13 +90,14 @@
               <th>E-posta</th>
               <th>Uçuş</th>
               <th>Güzergah</th>
+              <th>Koltuk</th>
               <th>Kalkış</th>
               <th>Ücret</th>
               <th>İşlem</th>
             </tr>
           </thead>
           <tbody id="tickets-body">
-            <tr><td colspan="8" class="empty-state">Yükleniyor...</td></tr>
+            <tr><td colspan="9" class="empty-state">Yükleniyor...</td></tr>
           </tbody>
         </table>
       </div>
@@ -92,6 +119,12 @@
         <input type="text" id="f-number" placeholder="TK123" required>
       </div>
       <div class="form-group">
+        <label>Havayolu Firması</label>
+        <select id="f-airline">
+          <option value="">– Firma Seçin –</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>Nereden</label>
         <select id="f-from" required>
           <option value="">Şehir seçin</option>
@@ -105,7 +138,7 @@
       </div>
       <div class="form-group">
         <label>Kalkış Zamanı</label>
-        <input type="datetime-local" id="f-dep" required>
+        <input type="datetime-local" id="f-dep" required oninput="updateArrivalMin()">
       </div>
       <div class="form-group">
         <label>Varış Zamanı</label>
@@ -127,10 +160,35 @@
   </div>
 </div>
 
+<!-- Airline Modal -->
+<div class="modal-overlay" id="airline-modal">
+  <div class="modal">
+    <h3 id="airline-modal-title">Yeni Firma Ekle</h3>
+    <div id="airline-modal-alert"></div>
+    <form class="form-stack" id="airline-form">
+      <input type="hidden" id="a-id">
+      <div class="form-group">
+        <label>Firma Adı</label>
+        <input type="text" id="a-name" placeholder="Türk Hava Yolları" required>
+      </div>
+      <div class="form-group">
+        <label>IATA Kodu</label>
+        <input type="text" id="a-code" placeholder="TK" maxlength="4" required style="text-transform:uppercase">
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-outline" onclick="closeAirlineModal()">İptal</button>
+        <button type="submit" class="btn btn-primary" id="airline-save-btn">Kaydet</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
   const API = 'http://localhost:3000';
   let cities = [];
+  let airlines = [];
   let editingId = null;
+  let editingAirlineId = null;
 
   function authHeaders() {
     const token = localStorage.getItem('flyticket_token');
@@ -160,11 +218,12 @@
   });
 
   function showTab(tab) {
-    document.getElementById('flights-tab').style.display = tab === 'flights' ? 'block' : 'none';
-    document.getElementById('tickets-tab').style.display = tab === 'tickets' ? 'block' : 'none';
-    document.getElementById('tab-flights').classList.toggle('active', tab === 'flights');
-    document.getElementById('tab-tickets').classList.toggle('active', tab === 'tickets');
+    ['flights','tickets','airlines'].forEach(t => {
+      document.getElementById(t + '-tab').style.display = tab === t ? 'block' : 'none';
+      document.getElementById('tab-' + t).classList.toggle('active', tab === t);
+    });
     if (tab === 'tickets') loadTickets();
+    if (tab === 'airlines') loadAirlines();
   }
 
   async function loadCities() {
@@ -178,6 +237,16 @@
     });
   }
 
+  async function loadAirlineSelect() {
+    const res = await fetch(API + '/api/airlines');
+    airlines = await res.json();
+    const sel = document.getElementById('f-airline');
+    sel.innerHTML = '<option value="">– Firma Seçin –</option>';
+    airlines.forEach(a => {
+      sel.insertAdjacentHTML('beforeend', `<option value="${a.id}">${a.name} (${a.code})</option>`);
+    });
+  }
+
   async function loadFlights() {
     const res = await fetch(API + '/api/flights?all=true', {
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flyticket_token') }
@@ -186,7 +255,7 @@
     const tbody = document.getElementById('flights-body');
 
     if (!flights.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Henüz uçuş eklenmemiş.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Henüz uçuş eklenmemiş.</td></tr>';
       return;
     }
 
@@ -195,6 +264,7 @@
     tbody.innerHTML = flights.map(f => `
       <tr>
         <td><span class="flight-number">${f.flight_number}</span></td>
+        <td>${f.airline_name ? `<span class="airline-badge">${f.airline_code} · ${f.airline_name}</span>` : '<span style="color:var(--muted)">–</span>'}</td>
         <td>${f.departure_city}</td>
         <td>${f.arrival_city}</td>
         <td>${fmt(f.departure_time)}</td>
@@ -242,6 +312,7 @@
       if (c.name === f.departure_city) document.getElementById('f-from').value = c.id;
       if (c.name === f.arrival_city)   document.getElementById('f-to').value   = c.id;
     });
+    document.getElementById('f-airline').value = f.airline_id || '';
 
     document.getElementById('modal-alert').innerHTML = '';
     document.getElementById('flight-modal').classList.add('open');
@@ -252,8 +323,10 @@
     const btn = document.getElementById('modal-save-btn');
     btn.disabled = true;
 
+    const airlineVal = document.getElementById('f-airline').value;
     const body = {
       flight_number:     document.getElementById('f-number').value.trim(),
+      airline_id:        airlineVal ? parseInt(airlineVal) : null,
       departure_city_id: parseInt(document.getElementById('f-from').value),
       arrival_city_id:   parseInt(document.getElementById('f-to').value),
       departure_time:    document.getElementById('f-dep').value,
@@ -284,7 +357,20 @@
   });
 
   async function deleteFlight(id) {
-    if (!confirm('Bu uçuşu silmek istediğinizden emin misiniz?')) return;
+    // Check if there are tickets for this flight before deleting
+    const ticketsRes = await fetch(API + '/api/tickets', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flyticket_token') }
+    });
+    const allTickets = ticketsRes.ok ? await ticketsRes.json() : [];
+    const flightObj  = (await (await fetch(API + '/api/flights/' + id)).json());
+    const count      = allTickets.filter(t => t.flight_number === flightObj.flight_number).length;
+
+    const msg = count > 0
+      ? `Bu uçuşa ait ${count} aktif rezervasyon var. Silerseniz tüm biletler iptal edilir. Devam etmek istiyor musunuz?`
+      : 'Bu uçuşu silmek istediğinizden emin misiniz?';
+
+    if (!confirm(msg)) return;
+
     const res = await fetch(API + '/api/flights/' + id, {
       method: 'DELETE',
       headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flyticket_token') }
@@ -306,11 +392,19 @@
     const tbody = document.getElementById('tickets-body');
 
     if (!tickets.length) {
-      tbody.innerHTML = '<tr><td colspan="8" class="empty-state">Henüz rezervasyon yok.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="9" class="empty-state">Henüz rezervasyon yok.</td></tr>';
       return;
     }
 
     const fmt = s => new Date(s).toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    const COLS = ['A','B','C','D','E','F'];
+    const seatLabel = n => {
+      if (!n) return '–';
+      const row = Math.ceil(n / 6);
+      const col = COLS[(n - 1) % 6];
+      return `${row}${col}`;
+    };
 
     tbody.innerHTML = tickets.map(t => `
       <tr>
@@ -319,6 +413,7 @@
         <td>${t.passenger_email}</td>
         <td><span class="flight-number">${t.flight_number}</span></td>
         <td>${t.departure_city} → ${t.arrival_city}</td>
+        <td><span class="badge badge-green">${seatLabel(t.seat_number)}</span></td>
         <td>${fmt(t.departure_time)}</td>
         <td>₺${Number(t.price).toLocaleString('tr-TR')}</td>
         <td>
@@ -336,12 +431,130 @@
     if (res.ok) loadTickets();
   }
 
+  function updateArrivalMin() {
+    const depVal = document.getElementById('f-dep').value;
+    const arrInput = document.getElementById('f-arr');
+    if (depVal) {
+      arrInput.min = depVal;
+      if (arrInput.value && arrInput.value <= depVal) {
+        arrInput.value = '';
+      }
+    }
+  }
+
   document.getElementById('flight-modal').addEventListener('click', e => {
     if (e.target === e.currentTarget) closeFlightModal();
   });
 
+  document.getElementById('airline-modal').addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeAirlineModal();
+  });
+
+  // ── AIRLINES ──────────────────────────────────
+  async function loadAirlines() {
+    const res = await fetch(API + '/api/airlines');
+    airlines = await res.json();
+    const tbody = document.getElementById('airlines-body');
+
+    // Also refresh the flight form select
+    await loadAirlineSelect();
+
+    if (!airlines.length) {
+      tbody.innerHTML = '<tr><td colspan="4" class="empty-state">Henüz firma eklenmemiş.</td></tr>';
+      return;
+    }
+
+    // Count flights per airline
+    const flightsRes = await fetch(API + '/api/flights?all=true', {
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flyticket_token') }
+    });
+    const allFlights = await flightsRes.json();
+    const flightCounts = {};
+    allFlights.forEach(f => { if (f.airline_id) flightCounts[f.airline_id] = (flightCounts[f.airline_id] || 0) + 1; });
+
+    tbody.innerHTML = airlines.map(a => `
+      <tr>
+        <td><span class="airline-badge">${a.code}</span></td>
+        <td><strong>${a.name}</strong></td>
+        <td>${flightCounts[a.id] || 0} uçuş</td>
+        <td style="display:flex;gap:0.4rem">
+          <button class="btn btn-outline btn-sm" onclick="editAirline(${a.id})">Düzenle</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteAirline(${a.id})">Sil</button>
+        </td>
+      </tr>`).join('');
+  }
+
+  function openAirlineModal() {
+    editingAirlineId = null;
+    document.getElementById('airline-modal-title').textContent = 'Yeni Firma Ekle';
+    document.getElementById('airline-form').reset();
+    document.getElementById('airline-modal-alert').innerHTML = '';
+    document.getElementById('airline-modal').classList.add('open');
+  }
+
+  function closeAirlineModal() {
+    document.getElementById('airline-modal').classList.remove('open');
+  }
+
+  function editAirline(id) {
+    const a = airlines.find(x => x.id === id);
+    if (!a) return;
+    editingAirlineId = id;
+    document.getElementById('airline-modal-title').textContent = 'Firmayı Düzenle';
+    document.getElementById('a-name').value = a.name;
+    document.getElementById('a-code').value = a.code;
+    document.getElementById('airline-modal-alert').innerHTML = '';
+    document.getElementById('airline-modal').classList.add('open');
+  }
+
+  document.getElementById('airline-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('airline-save-btn');
+    btn.disabled = true;
+
+    const body = {
+      name: document.getElementById('a-name').value.trim(),
+      code: document.getElementById('a-code').value.trim().toUpperCase()
+    };
+
+    const url    = editingAirlineId ? `${API}/api/airlines/${editingAirlineId}` : `${API}/api/airlines`;
+    const method = editingAirlineId ? 'PUT' : 'POST';
+
+    const res = await fetch(url, {
+      method,
+      headers: authHeaders(),
+      body: JSON.stringify(body)
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      closeAirlineModal();
+      loadAirlines();
+    } else {
+      document.getElementById('airline-modal-alert').innerHTML =
+        `<div class="alert alert-error">${data.error}</div>`;
+    }
+    btn.disabled = false;
+  });
+
+  async function deleteAirline(id) {
+    if (!confirm('Bu firmayı silmek istediğinizden emin misiniz?')) return;
+    const res = await fetch(API + '/api/airlines/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('flyticket_token') }
+    });
+    const data = await res.json();
+    if (res.ok) {
+      loadAirlines();
+    } else {
+      document.getElementById('airlines-alert').innerHTML =
+        `<div class="alert alert-error">${data.error}</div>`;
+    }
+  }
+
   checkAuth().then(() => {
     loadCities();
+    loadAirlineSelect();
     loadFlights();
   });
 </script>

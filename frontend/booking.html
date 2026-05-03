@@ -10,98 +10,413 @@
 
 <nav>
   <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
-  <a href="index.html">← Uçuşlara Dön</a>
+  <div id="nav-user-area" style="display:flex;align-items:center;gap:1rem">
+    <a href="index.html">← Uçuşlara Dön</a>
+  </div>
 </nav>
 
-<div class="page-wrapper">
-  <div class="card">
-    <h2>Yolcu Bilgileri</h2>
+<div class="page-wrapper" style="max-width:640px">
 
+  <!-- Step indicator -->
+  <div class="steps-bar">
+    <div class="step active" id="step-ind-1">
+      <div class="step-circle">1</div>
+      <span>Yolcu Bilgileri</span>
+    </div>
+    <div class="step-line"></div>
+    <div class="step" id="step-ind-2">
+      <div class="step-circle">2</div>
+      <span>Ödeme</span>
+    </div>
+  </div>
+
+  <div class="card">
+
+    <!-- Flight summary (her iki adımda görünür) -->
     <div id="flight-summary" class="flight-summary" style="display:none">
       <div>
         <div class="route" id="sum-route"></div>
         <div class="meta" id="sum-time"></div>
         <div class="meta" id="sum-number"></div>
       </div>
-      <div class="price" id="sum-price"></div>
+      <div>
+        <div class="price" id="sum-price"></div>
+        <div id="sum-total" style="font-size:0.8rem;color:var(--muted);text-align:right;margin-top:2px"></div>
+      </div>
     </div>
 
     <div id="alert-box"></div>
 
-    <form class="form-stack" id="booking-form">
-      <input type="hidden" name="flight_id" id="flight-id-input">
+    <!-- ── ADIM 1: Yolcu Bilgileri ── -->
+    <div id="step-1">
+      <h2>Yolcu Bilgileri</h2>
+      <form class="form-stack" id="passenger-form">
+        <input type="hidden" id="flight-id-input">
 
-      <div class="form-group">
-        <label for="passenger_name">Ad</label>
-        <input type="text" name="passenger_name" id="passenger_name" placeholder="Adınız" required>
-      </div>
-      <div class="form-group">
-        <label for="passenger_surname">Soyad</label>
-        <input type="text" name="passenger_surname" id="passenger_surname" placeholder="Soyadınız" required>
-      </div>
-      <div class="form-group">
-        <label for="passenger_email">E-posta</label>
-        <input type="email" name="passenger_email" id="passenger_email" placeholder="ornek@mail.com" required>
-      </div>
+        <div class="form-group">
+          <label for="passenger_name">Ad</label>
+          <input type="text" id="passenger_name" placeholder="Adınız" required>
+        </div>
+        <div class="form-group">
+          <label for="passenger_surname">Soyad</label>
+          <input type="text" id="passenger_surname" placeholder="Soyadınız" required>
+        </div>
+        <div class="form-group">
+          <label for="passenger_email">E-posta</label>
+          <input type="email" id="passenger_email" placeholder="ornek@mail.com" required>
+        </div>
 
-      <button type="submit" class="btn btn-primary btn-full mt-2" id="submit-btn">Bileti Onayla</button>
-    </form>
+        <div class="form-group">
+          <label for="quantity">Bilet Sayısı</label>
+          <select id="quantity"></select>
+        </div>
+
+        <!-- Koltuk haritası -->
+        <div id="seat-map-section" style="display:none">
+          <button type="button" class="btn btn-outline btn-full" id="seat-toggle-btn" onclick="toggleSeatMap()">
+            ✈ Koltuk Seç (İsteğe Bağlı)
+          </button>
+          <div id="seat-map-container" class="seat-map-container" style="display:none">
+            <div class="seat-map-legend">
+              <div class="legend-item"><div class="legend-dot" style="background:#dcfce7;border:1px solid #86efac"></div> Müsait</div>
+              <div class="legend-item"><div class="legend-dot" style="background:#e5e7eb;border:1px solid #d1d5db"></div> Dolu</div>
+              <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div> Seçildi</div>
+            </div>
+            <div id="selected-info" class="selected-seats-info">Koltuk seçmeyi atlarsanız otomatik atanır.</div>
+            <div class="seat-map-scroll">
+              <div id="seat-grid"></div>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-full mt-2">Ödemeye Geç →</button>
+      </form>
+    </div>
+
+    <!-- ── ADIM 2: Ödeme ── -->
+    <div id="step-2" style="display:none">
+      <h2>Ödeme Bilgileri</h2>
+
+      <!-- Özet -->
+      <div id="payment-summary" class="payment-summary"></div>
+
+      <form class="form-stack" id="payment-form">
+
+        <div class="form-group">
+          <label for="card-number">Kart Numarası</label>
+          <div style="position:relative">
+            <input type="text" id="card-number" placeholder="0000 0000 0000 0000"
+                   maxlength="19" autocomplete="cc-number" inputmode="numeric">
+            <span id="card-type-icon" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:1.3rem"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="card-name">Kart Üzerindeki Ad</label>
+          <input type="text" id="card-name" placeholder="AD SOYAD" style="text-transform:uppercase">
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+          <div class="form-group">
+            <label for="card-expiry">Son Kullanma Tarihi</label>
+            <input type="text" id="card-expiry" placeholder="AA/YY" maxlength="5" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label for="card-cvv">CVV</label>
+            <input type="text" id="card-cvv" placeholder="000" maxlength="3" inputmode="numeric">
+          </div>
+        </div>
+
+        <div id="payment-alert"></div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;margin-top:0.5rem">
+          <button type="button" class="btn btn-outline" onclick="goToStep(1)">← Geri</button>
+          <button type="submit" class="btn btn-primary" id="pay-btn">Ödemeyi Tamamla</button>
+        </div>
+      </form>
+    </div>
+
   </div>
 </div>
 
 <script>
   const API = 'http://localhost:3000';
+  const COLS = ['A','B','C','D','E','F'];
+  const SEATS_PER_ROW = 6;
+
+  // Navbar
+  (function setupNav() {
+    const token = localStorage.getItem('flyticket_user_token');
+    const name  = localStorage.getItem('flyticket_user_name');
+    const area  = document.getElementById('nav-user-area');
+    if (token && name) {
+      area.innerHTML = `
+        <a href="index.html">← Uçuşlara Dön</a>
+        <a href="my-tickets.html">Biletlerim</a>
+        <span style="color:rgba(255,255,255,0.75);font-size:0.85rem">👤 ${name}</span>`;
+    }
+  })();
+
+  // Pre-fill passenger info if logged in
+  (function prefill() {
+    const name  = localStorage.getItem('flyticket_user_name');
+    const email = localStorage.getItem('flyticket_user_email');
+    if (name) {
+      const parts = name.split(' ');
+      document.getElementById('passenger_name').value    = parts[0] || '';
+      document.getElementById('passenger_surname').value = parts.slice(1).join(' ') || '';
+    }
+    if (email) document.getElementById('passenger_email').value = email;
+  })();
+
   const params = new URLSearchParams(window.location.search);
   const flightId = params.get('flight');
 
-  async function loadFlight() {
-    if (!flightId) { location.href = 'index.html'; return; }
+  let flightData = null;
+  let takenSeats = [];
+  let selectedSeats = [];
+  let seatMapOpen = false;
 
-    const res = await fetch(API + '/api/flights/' + flightId);
-    if (!res.ok) { location.href = 'index.html'; return; }
-    const f = await res.json();
+  // Yolcu verileri (adım 1'den adım 2'ye taşınır)
+  let passengerData = null;
 
-    document.getElementById('flight-id-input').value = f.id;
-
-    const dep = new Date(f.departure_time);
-    const arr = new Date(f.arrival_time);
-    const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
-
-    document.getElementById('sum-route').textContent   = `${f.departure_city} → ${f.arrival_city}`;
-    document.getElementById('sum-time').textContent    = `${fmt(dep)} – ${fmt(arr)}`;
-    document.getElementById('sum-number').textContent  = `Uçuş: ${f.flight_number}`;
-    document.getElementById('sum-price').textContent   = `₺${Number(f.price).toLocaleString('tr-TR')}`;
-    document.getElementById('flight-summary').style.display = 'flex';
+  function seatLabel(n) {
+    return `${Math.ceil(n / SEATS_PER_ROW)}${COLS[(n - 1) % SEATS_PER_ROW]}`;
   }
 
-  document.getElementById('booking-form').addEventListener('submit', async e => {
-    e.preventDefault();
-    const btn = document.getElementById('submit-btn');
-    btn.disabled = true;
-    btn.textContent = 'İşleniyor...';
+  // ── Uçuş yükle ──────────────────────────────────────────
+  async function loadFlight() {
+    if (!flightId) { location.href = 'index.html'; return; }
+    const res = await fetch(API + '/api/flights/' + flightId);
+    if (!res.ok) { location.href = 'index.html'; return; }
+    flightData = await res.json();
 
-    const body = {
+    document.getElementById('flight-id-input').value = flightData.id;
+
+    const dep = new Date(flightData.departure_time);
+    const arr = new Date(flightData.arrival_time);
+    const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+    document.getElementById('sum-route').textContent  = `${flightData.departure_city} → ${flightData.arrival_city}`;
+    document.getElementById('sum-time').textContent   = `${fmt(dep)} – ${fmt(arr)}`;
+    document.getElementById('sum-number').textContent = `${flightData.flight_number}${flightData.airline_name ? ' · ' + flightData.airline_name : ''}`;
+    document.getElementById('sum-price').textContent  = `₺${Number(flightData.price).toLocaleString('tr-TR')} / kişi`;
+    document.getElementById('flight-summary').style.display = 'flex';
+
+    const qtySelect = document.getElementById('quantity');
+    const maxQty = Math.min(9, flightData.seats_available);
+    for (let i = 1; i <= maxQty; i++) {
+      qtySelect.insertAdjacentHTML('beforeend', `<option value="${i}">${i} Yolcu</option>`);
+    }
+    updateTotalPrice();
+    document.getElementById('seat-map-section').style.display = 'block';
+
+    const seatsRes = await fetch(API + '/api/flights/' + flightId + '/taken-seats');
+    if (seatsRes.ok) takenSeats = await seatsRes.json();
+    renderSeatMap();
+  }
+
+  function updateTotalPrice() {
+    const qty = parseInt(document.getElementById('quantity').value) || 1;
+    const total = qty * Number(flightData.price);
+    document.getElementById('sum-total').textContent = qty > 1
+      ? `Toplam: ₺${total.toLocaleString('tr-TR')}` : '';
+  }
+
+  // ── Koltuk haritası ──────────────────────────────────────
+  function toggleSeatMap() {
+    seatMapOpen = !seatMapOpen;
+    document.getElementById('seat-map-container').style.display = seatMapOpen ? 'block' : 'none';
+    document.getElementById('seat-toggle-btn').textContent = seatMapOpen
+      ? '▲ Koltuk Haritasını Kapat' : '✈ Koltuk Seç (İsteğe Bağlı)';
+  }
+
+  function renderSeatMap() {
+    const grid = document.getElementById('seat-grid');
+    if (!flightData) return;
+    const totalSeats = flightData.seats_total;
+    const rows = Math.ceil(totalSeats / SEATS_PER_ROW);
+    let html = '<div class="seat-plane">';
+    html += '<div class="seat-row"><div class="seat-row-num"></div>';
+    for (let c = 0; c < 6; c++) {
+      if (c === 3) html += '<div class="seat-aisle"></div>';
+      html += `<div class="seat-col-hdr">${COLS[c]}</div>`;
+    }
+    html += '</div>';
+    for (let r = 1; r <= rows; r++) {
+      html += `<div class="seat-row"><div class="seat-row-num">${r}</div>`;
+      for (let c = 0; c < 6; c++) {
+        if (c === 3) html += '<div class="seat-aisle"></div>';
+        const seatNum = (r - 1) * SEATS_PER_ROW + c + 1;
+        if (seatNum > totalSeats) { html += '<div class="seat seat-empty"></div>'; continue; }
+        const label = seatLabel(seatNum);
+        if (takenSeats.includes(seatNum)) {
+          html += `<div class="seat seat-taken" title="Dolu: ${label}">${label}</div>`;
+        } else if (selectedSeats.includes(seatNum)) {
+          html += `<button type="button" class="seat seat-selected" onclick="toggleSeat(${seatNum})">${label}</button>`;
+        } else {
+          html += `<button type="button" class="seat seat-available" onclick="toggleSeat(${seatNum})">${label}</button>`;
+        }
+      }
+      html += '</div>';
+    }
+    html += '</div>';
+    grid.innerHTML = html;
+    updateSelectedInfo();
+  }
+
+  function toggleSeat(seatNum) {
+    const qty = parseInt(document.getElementById('quantity').value) || 1;
+    const idx = selectedSeats.indexOf(seatNum);
+    if (idx >= 0) { selectedSeats.splice(idx, 1); }
+    else { if (selectedSeats.length >= qty) selectedSeats.shift(); selectedSeats.push(seatNum); }
+    renderSeatMap();
+  }
+
+  function updateSelectedInfo() {
+    const qty = parseInt(document.getElementById('quantity').value) || 1;
+    const info = document.getElementById('selected-info');
+    if (selectedSeats.length === 0) {
+      info.textContent = 'Koltuk seçmeyi atlarsanız otomatik atanır.';
+      info.style.color = 'var(--muted)';
+    } else {
+      const remaining = qty - selectedSeats.length;
+      info.innerHTML = `Seçilen: <strong>${selectedSeats.map(seatLabel).join(', ')}</strong>`;
+      if (remaining > 0) info.innerHTML += ` &nbsp;<span style="color:var(--accent);font-weight:600">${remaining} koltuk daha seçin</span>`;
+      info.style.color = 'var(--text)';
+    }
+  }
+
+  document.getElementById('quantity').addEventListener('change', function () {
+    while (selectedSeats.length > parseInt(this.value)) selectedSeats.pop();
+    updateTotalPrice();
+    renderSeatMap();
+  });
+
+  // ── Adım yönetimi ────────────────────────────────────────
+  function goToStep(n) {
+    document.getElementById('step-1').style.display = n === 1 ? 'block' : 'none';
+    document.getElementById('step-2').style.display = n === 2 ? 'block' : 'none';
+    document.getElementById('step-ind-1').classList.toggle('active', n === 1);
+    document.getElementById('step-ind-2').classList.toggle('active', n === 2);
+    document.getElementById('alert-box').innerHTML = '';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Adım 1 submit (geçiş) ────────────────────────────────
+  document.getElementById('passenger-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const qty = parseInt(document.getElementById('quantity').value) || 1;
+
+    if (selectedSeats.length > 0 && selectedSeats.length !== qty) {
+      document.getElementById('alert-box').innerHTML =
+        `<div class="alert alert-error">Lütfen tam olarak ${qty} koltuk seçin veya koltuk seçimini atlayın.</div>`;
+      return;
+    }
+
+    passengerData = {
       flight_id:         parseInt(document.getElementById('flight-id-input').value),
       passenger_name:    document.getElementById('passenger_name').value.trim(),
       passenger_surname: document.getElementById('passenger_surname').value.trim(),
-      passenger_email:   document.getElementById('passenger_email').value.trim()
+      passenger_email:   document.getElementById('passenger_email').value.trim(),
+      quantity:          qty,
+      seat_numbers:      selectedSeats.length > 0 ? [...selectedSeats] : []
     };
+
+    // Ödeme özeti
+    const total = (qty * Number(flightData.price)).toLocaleString('tr-TR');
+    document.getElementById('payment-summary').innerHTML = `
+      <div class="payment-summary-row">
+        <span>${passengerData.passenger_name} ${passengerData.passenger_surname}</span>
+        <span>${qty} bilet</span>
+      </div>
+      <div class="payment-summary-row">
+        <span>${flightData.departure_city} → ${flightData.arrival_city}</span>
+        <strong style="color:var(--primary)">₺${total}</strong>
+      </div>`;
+
+    goToStep(2);
+  });
+
+  // ── Kart input formatlama ────────────────────────────────
+  document.getElementById('card-number').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').substring(0, 16);
+    this.value = v.match(/.{1,4}/g)?.join(' ') || v;
+
+    const icon = document.getElementById('card-type-icon');
+    if (v.startsWith('4'))           icon.textContent = '💳';       // Visa
+    else if (/^5[1-5]/.test(v))      icon.textContent = '💳';       // Mastercard
+    else if (v.startsWith('34') || v.startsWith('37')) icon.textContent = '💳'; // Amex
+    else                             icon.textContent = v.length > 0 ? '💳' : '';
+  });
+
+  document.getElementById('card-expiry').addEventListener('input', function () {
+    let v = this.value.replace(/\D/g, '').substring(0, 4);
+    if (v.length >= 3) v = v.substring(0, 2) + '/' + v.substring(2);
+    this.value = v;
+  });
+
+  document.getElementById('card-cvv').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '').substring(0, 3);
+  });
+
+  // ── Adım 2 submit (ödeme simülasyonu) ───────────────────
+  document.getElementById('payment-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const alertEl = document.getElementById('payment-alert');
+    alertEl.innerHTML = '';
+
+    const cardNum    = document.getElementById('card-number').value.replace(/\s/g, '');
+    const cardName   = document.getElementById('card-name').value.trim();
+    const cardExpiry = document.getElementById('card-expiry').value;
+    const cardCvv    = document.getElementById('card-cvv').value;
+
+    // Validasyon
+    if (cardNum.length !== 16) {
+      alertEl.innerHTML = '<div class="alert alert-error">Kart numarası 16 hane olmalıdır.</div>'; return;
+    }
+    if (!cardName) {
+      alertEl.innerHTML = '<div class="alert alert-error">Kart üzerindeki adı girin.</div>'; return;
+    }
+    if (!/^\d{2}\/\d{2}$/.test(cardExpiry)) {
+      alertEl.innerHTML = '<div class="alert alert-error">Son kullanma tarihi AA/YY formatında olmalıdır.</div>'; return;
+    }
+    const [mm, yy] = cardExpiry.split('/').map(Number);
+    const now = new Date();
+    const expDate = new Date(2000 + yy, mm - 1, 1);
+    if (mm < 1 || mm > 12 || expDate < new Date(now.getFullYear(), now.getMonth(), 1)) {
+      alertEl.innerHTML = '<div class="alert alert-error">Kartın son kullanma tarihi geçmiş.</div>'; return;
+    }
+    if (cardCvv.length !== 3) {
+      alertEl.innerHTML = '<div class="alert alert-error">CVV 3 hane olmalıdır.</div>'; return;
+    }
+
+    // Ödeme animasyonu
+    const btn = document.getElementById('pay-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="pay-spinner"></span> İşleniyor...';
+
+    await new Promise(r => setTimeout(r, 2000));
+
+    // Bilet oluştur
+    const userToken = localStorage.getItem('flyticket_user_token');
+    const reqHeaders = { 'Content-Type': 'application/json' };
+    if (userToken) reqHeaders['Authorization'] = 'Bearer ' + userToken;
 
     const res = await fetch(API + '/api/tickets', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+      headers: reqHeaders,
+      body: JSON.stringify(passengerData)
     });
-
     const data = await res.json();
 
     if (res.ok) {
-      location.href = `success.html?ref=${data.booking_reference}`;
+      const refs = data.bookings.map(b => b.booking_reference).join(',');
+      location.href = `success.html?refs=${refs}`;
     } else {
-      document.getElementById('alert-box').innerHTML =
-        `<div class="alert alert-error">${data.error || 'Bir hata oluştu.'}</div>`;
+      alertEl.innerHTML = `<div class="alert alert-error">${data.error || 'Bir hata oluştu.'}</div>`;
       btn.disabled = false;
-      btn.textContent = 'Bileti Onayla';
+      btn.innerHTML = 'Ödemeyi Tamamla';
     }
   });
 

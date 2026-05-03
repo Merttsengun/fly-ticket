@@ -1,7 +1,21 @@
 {
   "permissions": {
     "allow": [
-      "PowerShell(Copy-Item *)"
+      "PowerShell(Copy-Item *)",
+      "Bash(Get-ChildItem -Recurse -Directory)",
+      "Bash(Select-Object FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\backend\" -Exclude node_modules | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\frontend\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\backend\\\\db\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\backend\\\\routes\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\backend\\\\middleware\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\frontend\\\\js\" | ForEach-Object { $_.FullName })",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\\\\frontend\\\\css\" | ForEach-Object { $_.FullName })",
+      "Bash(node backend/db/setup.js)",
+      "Bash(node -e \"require\\('./backend/db/connection'\\)\")",
+      "Bash(npm install *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Mert\\\\Desktop\\\\dynamic web final\" -Recurse -File)"
     ]
   }
 }

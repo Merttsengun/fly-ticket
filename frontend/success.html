@@ -10,17 +10,21 @@
 
 <nav>
   <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
-  <a href="index.html">Ana Sayfa</a>
+  <div id="nav-user-area" style="display:flex;align-items:center;gap:1rem">
+    <a href="index.html">Ana Sayfa</a>
+  </div>
 </nav>
 
-<div class="page-wrapper">
+<div class="page-wrapper" style="max-width:600px">
   <div class="card text-center">
     <div class="success-icon">✓</div>
-    <h2 style="color: var(--success); border:none; margin-bottom:0.5rem">Rezervasyonunuz Onaylandı!</h2>
+    <h2 id="success-title" style="color: var(--success); border:none; margin-bottom:0.5rem">Rezervasyonunuz Onaylandı!</h2>
     <p style="color: var(--muted); font-size:0.9rem">Bilet bilgilerinizi kaydedin.</p>
 
-    <div class="ref-code" id="ref-code">–</div>
+    <!-- Booking references + seat numbers -->
+    <div id="refs-box" class="refs-box"></div>
 
+    <!-- Common ticket info -->
     <div class="ticket-box" id="ticket-box"></div>
 
     <a href="index.html" class="btn btn-primary btn-full mt-2">Yeni Uçuş Ara</a>
@@ -29,32 +33,70 @@
 
 <script>
   const API = 'http://localhost:3000';
+  const COLS = ['A','B','C','D','E','F'];
+  const SEATS_PER_ROW = 6;
+
+  function seatLabel(n) {
+    if (!n || n === 0) return '–';
+    const row = Math.ceil(n / SEATS_PER_ROW);
+    const col = COLS[(n - 1) % SEATS_PER_ROW];
+    return `${row}${col}`;
+  }
+
   const params = new URLSearchParams(window.location.search);
-  const ref = params.get('ref');
+  let refs = [];
+  if (params.get('refs')) {
+    refs = params.get('refs').split(',').filter(r => r.trim());
+  } else if (params.get('ref')) {
+    refs = [params.get('ref')];
+  }
 
-  async function loadTicket() {
-    if (!ref) { location.href = 'index.html'; return; }
+  async function loadTickets() {
+    if (!refs.length) { location.href = 'index.html'; return; }
 
-    const res = await fetch(API + '/api/tickets/' + ref);
-    if (!res.ok) { location.href = 'index.html'; return; }
-    const t = await res.json();
+    const results = await Promise.all(
+      refs.map(ref => fetch(API + '/api/tickets/' + ref).then(r => r.ok ? r.json() : null))
+    );
 
-    document.getElementById('ref-code').textContent = t.booking_reference;
+    const tickets = results.filter(Boolean);
+    if (!tickets.length) { location.href = 'index.html'; return; }
 
-    const dep = new Date(t.departure_time);
-    const arr = new Date(t.arrival_time);
+    const first = tickets[0];
+    const count = tickets.length;
+
+    document.getElementById('success-title').textContent =
+      count > 1 ? `${count} Biletiniz Onaylandı!` : 'Rezervasyonunuz Onaylandı!';
+
+    // Refs + seat numbers
+    const refsHtml = tickets.map(t => `
+      <div class="booking-ref-item">
+        <span class="ref-code-display">${t.booking_reference}</span>
+        <span class="seat-tag">Koltuk ${seatLabel(t.seat_number)}</span>
+      </div>
+    `).join('');
+    document.getElementById('refs-box').innerHTML = refsHtml;
+
+    // Common info
+    const dep = new Date(first.departure_time);
+    const arr = new Date(first.arrival_time);
     const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
 
     const rows = [
-      ['Ad Soyad', `${t.passenger_name} ${t.passenger_surname}`],
-      ['E-posta',  t.passenger_email],
-      ['Uçuş No', t.flight_number],
-      ['Nereden',  t.departure_city],
-      ['Nereye',   t.arrival_city],
-      ['Kalkış',   fmt(dep)],
-      ['Varış',    fmt(arr)],
-      ['Ücret',    `₺${Number(t.price).toLocaleString('tr-TR')}`],
+      ['Ad Soyad',  `${first.passenger_name} ${first.passenger_surname}`],
+      ['E-posta',   first.passenger_email],
+      ['Havayolu',  first.airline_name ? `${first.airline_name} (${first.airline_code})` : '–'],
+      ['Uçuş No',   first.flight_number],
+      ['Güzergah',  `${first.departure_city} → ${first.arrival_city}`],
+      ['Kalkış',    fmt(dep)],
+      ['Varış',     fmt(arr)],
     ];
+
+    if (count === 1) {
+      rows.push(['Ücret', `₺${Number(first.price).toLocaleString('tr-TR')}`]);
+    } else {
+      rows.push(['Bilet Başına', `₺${Number(first.price).toLocaleString('tr-TR')}`]);
+      rows.push(['Toplam', `₺${(Number(first.price) * count).toLocaleString('tr-TR')}`]);
+    }
 
     document.getElementById('ticket-box').innerHTML = rows.map(([label, value]) => `
       <div class="ticket-row">
@@ -63,7 +105,21 @@
       </div>`).join('');
   }
 
-  loadTicket();
+  // Navbar
+  (function setupNav() {
+    const token = localStorage.getItem('flyticket_user_token');
+    const name  = localStorage.getItem('flyticket_user_name');
+    const area  = document.getElementById('nav-user-area');
+    if (token && name) {
+      area.innerHTML = `
+        <a href="my-tickets.html">Biletlerim</a>
+        <span style="color:rgba(255,255,255,0.75);font-size:0.85rem">👤 ${name}</span>`;
+    } else {
+      area.innerHTML = '<a href="index.html">Ana Sayfa</a>';
+    }
+  })();
+
+  loadTickets();
 </script>
 </body>
 </html>
