@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Bilet Al</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
+  <a href="index.html">← Uçuşlara Dön</a>
+</nav>
+
+<div class="page-wrapper">
+  <div class="card">
+    <h2>Yolcu Bilgileri</h2>
+
+    <div id="flight-summary" class="flight-summary" style="display:none">
+      <div>
+        <div class="route" id="sum-route"></div>
+        <div class="meta" id="sum-time"></div>
+        <div class="meta" id="sum-number"></div>
+      </div>
+      <div class="price" id="sum-price"></div>
+    </div>
+
+    <div id="alert-box"></div>
+
+    <form class="form-stack" id="booking-form">
+      <input type="hidden" name="flight_id" id="flight-id-input">
+
+      <div class="form-group">
+        <label for="passenger_name">Ad</label>
+        <input type="text" name="passenger_name" id="passenger_name" placeholder="Adınız" required>
+      </div>
+      <div class="form-group">
+        <label for="passenger_surname">Soyad</label>
+        <input type="text" name="passenger_surname" id="passenger_surname" placeholder="Soyadınız" required>
+      </div>
+      <div class="form-group">
+        <label for="passenger_email">E-posta</label>
+        <input type="email" name="passenger_email" id="passenger_email" placeholder="ornek@mail.com" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full mt-2" id="submit-btn">Bileti Onayla</button>
+    </form>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+  const params = new URLSearchParams(window.location.search);
+  const flightId = params.get('flight');
+
+  async function loadFlight() {
+    if (!flightId) { location.href = 'index.html'; return; }
+
+    const res = await fetch(API + '/api/flights/' + flightId);
+    if (!res.ok) { location.href = 'index.html'; return; }
+    const f = await res.json();
+
+    document.getElementById('flight-id-input').value = f.id;
+
+    const dep = new Date(f.departure_time);
+    const arr = new Date(f.arrival_time);
+    const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+
+    document.getElementById('sum-route').textContent   = `${f.departure_city} → ${f.arrival_city}`;
+    document.getElementById('sum-time').textContent    = `${fmt(dep)} – ${fmt(arr)}`;
+    document.getElementById('sum-number').textContent  = `Uçuş: ${f.flight_number}`;
+    document.getElementById('sum-price').textContent   = `₺${Number(f.price).toLocaleString('tr-TR')}`;
+    document.getElementById('flight-summary').style.display = 'flex';
+  }
+
+  document.getElementById('booking-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true;
+    btn.textContent = 'İşleniyor...';
+
+    const body = {
+      flight_id:         parseInt(document.getElementById('flight-id-input').value),
+      passenger_name:    document.getElementById('passenger_name').value.trim(),
+      passenger_surname: document.getElementById('passenger_surname').value.trim(),
+      passenger_email:   document.getElementById('passenger_email').value.trim()
+    };
+
+    const res = await fetch(API + '/api/tickets', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      location.href = `success.html?ref=${data.booking_reference}`;
+    } else {
+      document.getElementById('alert-box').innerHTML =
+        `<div class="alert alert-error">${data.error || 'Bir hata oluştu.'}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Bileti Onayla';
+    }
+  });
+
+  loadFlight();
+</script>
+</body>
+</html>

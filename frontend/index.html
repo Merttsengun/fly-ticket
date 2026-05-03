@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Uçuş Ara</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
+  <a href="admin-login.html">Admin Girişi</a>
+</nav>
+
+<div class="hero">
+  <h1>Türkiye'nin Her Şehrine Uç</h1>
+  <p>81 il arasında uygun fiyatlı uçuş biletleri</p>
+</div>
+
+<div class="search-wrapper">
+  <div class="search-card">
+    <h2>&#9992; Uçuş Ara</h2>
+    <form action="index.html" method="GET">
+      <div class="search-grid">
+        <div class="form-group">
+          <label for="from">Nereden</label>
+          <select name="from" id="from" required>
+            <option value="">Şehir seçin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="to">Nereye</label>
+          <select name="to" id="to" required>
+            <option value="">Şehir seçin</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="date">Tarih</label>
+          <input type="date" name="date" id="date" required>
+        </div>
+        <button type="submit" class="btn btn-primary">Ara</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="results-wrapper" id="results-section" style="display:none">
+  <h2 id="results-title"></h2>
+  <div id="results-list"></div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+
+  async function loadCities() {
+    const res = await fetch(API + '/api/cities');
+    const cities = await res.json();
+    const fromSel = document.getElementById('from');
+    const toSel   = document.getElementById('to');
+
+    const params = new URLSearchParams(window.location.search);
+    const selectedFrom = params.get('from') || '';
+    const selectedTo   = params.get('to')   || '';
+
+    cities.forEach(c => {
+      fromSel.insertAdjacentHTML('beforeend',
+        `<option value="${c.id}" ${c.id == selectedFrom ? 'selected' : ''}>${c.name}</option>`);
+      toSel.insertAdjacentHTML('beforeend',
+        `<option value="${c.id}" ${c.id == selectedTo ? 'selected' : ''}>${c.name}</option>`);
+    });
+  }
+
+  async function searchFlights() {
+    const params = new URLSearchParams(window.location.search);
+    const from = params.get('from');
+    const to   = params.get('to');
+    const date = params.get('date');
+
+    const section = document.getElementById('results-section');
+    const list    = document.getElementById('results-list');
+    const title   = document.getElementById('results-title');
+    section.style.display = 'block';
+
+    const qs = new URLSearchParams();
+    if (from) qs.set('from', from);
+    if (to)   qs.set('to', to);
+    if (date) qs.set('date', date);
+
+    const res = await fetch(API + '/api/flights?' + qs.toString());
+    const flights = await res.json();
+
+    if (!Array.isArray(flights) || flights.length === 0) {
+      title.textContent = from || to || date ? 'Arama Sonuçları' : 'Mevcut Uçuşlar';
+      list.innerHTML = '<div class="empty-state">Uygun uçuş bulunamadı.</div>';
+      return;
+    }
+
+    title.textContent = from || to || date ? `${flights.length} uçuş bulundu` : `${flights.length} uçuş mevcut`;
+    list.innerHTML = flights.map(f => {
+      const dep = new Date(f.departure_time);
+      const arr = new Date(f.arrival_time);
+      const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+      return `
+        <div class="flight-card">
+          <div>
+            <div class="flight-route">
+              <span class="flight-city">${f.departure_city}</span>
+              <span class="flight-arrow">→</span>
+              <span class="flight-city">${f.arrival_city}</span>
+              <span class="flight-number">${f.flight_number}</span>
+            </div>
+            <div class="flight-time">${fmt(dep)} → ${fmt(arr)}</div>
+          </div>
+          <div>
+            <div class="flight-price">₺${Number(f.price).toLocaleString('tr-TR')}</div>
+            <div class="flight-seats">${f.seats_available} koltuk</div>
+          </div>
+          <a href="booking.html?flight=${f.id}" class="btn btn-accent">Bilet Al</a>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('date').min = new Date().toISOString().split('T')[0];
+
+  loadCities().then(searchFlights);
+</script>
+</body>
+</html>

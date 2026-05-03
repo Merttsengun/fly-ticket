@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Admin Girişi</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="admin-login-wrap">
+  <div class="admin-login-card">
+    <h2>&#9992; FlyTicket Admin</h2>
+
+    <div id="alert-box"></div>
+
+    <form class="form-stack" id="login-form">
+      <div class="form-group">
+        <label for="username">Kullanıcı Adı</label>
+        <input type="text" id="username" name="username" placeholder="admin" required autofocus>
+      </div>
+      <div class="form-group">
+        <label for="password">Şifre</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-1" id="login-btn">Giriş Yap</button>
+    </form>
+
+    <div class="mt-2 text-center">
+      <a href="index.html" style="font-size:0.85rem; color: var(--muted);">← Siteye Dön</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+
+  const _token = localStorage.getItem('flyticket_token');
+  if (_token) {
+    fetch(API + '/api/admin/me', { headers: { 'Authorization': 'Bearer ' + _token } })
+      .then(r => {
+        if (r.ok) location.href = 'admin-panel.html';
+        else localStorage.removeItem('flyticket_token');
+      });
+  }
+
+  document.getElementById('login-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true;
+    btn.textContent = 'Giriş yapılıyor...';
+
+    const res = await fetch(API + '/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: document.getElementById('username').value,
+        password: document.getElementById('password').value
+      })
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      localStorage.setItem('flyticket_token', data.token);
+      location.href = 'admin-panel.html';
+    } else {
+      document.getElementById('alert-box').innerHTML =
+        `<div class="alert alert-error">${data.error || 'Giriş başarısız.'}</div>`;
+      btn.disabled = false;
+      btn.textContent = 'Giriş Yap';
+    }
+  });
+</script>
+</body>
+</html>

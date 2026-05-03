@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyTicket – Rezervasyon Onaylandı</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">Fly<span>Ticket</span></a>
+  <a href="index.html">Ana Sayfa</a>
+</nav>
+
+<div class="page-wrapper">
+  <div class="card text-center">
+    <div class="success-icon">✓</div>
+    <h2 style="color: var(--success); border:none; margin-bottom:0.5rem">Rezervasyonunuz Onaylandı!</h2>
+    <p style="color: var(--muted); font-size:0.9rem">Bilet bilgilerinizi kaydedin.</p>
+
+    <div class="ref-code" id="ref-code">–</div>
+
+    <div class="ticket-box" id="ticket-box"></div>
+
+    <a href="index.html" class="btn btn-primary btn-full mt-2">Yeni Uçuş Ara</a>
+  </div>
+</div>
+
+<script>
+  const API = 'http://localhost:3000';
+  const params = new URLSearchParams(window.location.search);
+  const ref = params.get('ref');
+
+  async function loadTicket() {
+    if (!ref) { location.href = 'index.html'; return; }
+
+    const res = await fetch(API + '/api/tickets/' + ref);
+    if (!res.ok) { location.href = 'index.html'; return; }
+    const t = await res.json();
+
+    document.getElementById('ref-code').textContent = t.booking_reference;
+
+    const dep = new Date(t.departure_time);
+    const arr = new Date(t.arrival_time);
+    const fmt = d => d.toLocaleString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+
+    const rows = [
+      ['Ad Soyad', `${t.passenger_name} ${t.passenger_surname}`],
+      ['E-posta',  t.passenger_email],
+      ['Uçuş No', t.flight_number],
+      ['Nereden',  t.departure_city],
+      ['Nereye',   t.arrival_city],
+      ['Kalkış',   fmt(dep)],
+      ['Varış',    fmt(arr)],
+      ['Ücret',    `₺${Number(t.price).toLocaleString('tr-TR')}`],
+    ];
+
+    document.getElementById('ticket-box').innerHTML = rows.map(([label, value]) => `
+      <div class="ticket-row">
+        <span class="label">${label}</span>
+        <span class="value">${value}</span>
+      </div>`).join('');
+  }
+
+  loadTicket();
+</script>
+</body>
+</html>
