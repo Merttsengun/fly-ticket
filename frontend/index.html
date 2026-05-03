@@ -141,7 +141,7 @@
           </div>
           <div>
             <div class="flight-price">₺${Number(f.price).toLocaleString('tr-TR')}</div>
-            <div class="flight-seats">${f.seats_available}/${f.seats_total} koltuk</div>
+            <div class="flight-seats">${f.seats_total - f.seats_available}/${f.seats_total} koltuk</div>
           </div>
           ${f.seats_available === 0
             ? '<span class="badge-full">DOLU</span>'

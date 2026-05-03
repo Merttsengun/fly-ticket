@@ -203,6 +203,13 @@
     document.getElementById('sum-price').textContent  = `₺${Number(flightData.price).toLocaleString('tr-TR')} / kişi`;
     document.getElementById('flight-summary').style.display = 'flex';
 
+    if (flightData.seats_available === 0) {
+      document.getElementById('alert-box').innerHTML =
+        '<div class="alert alert-error">Bu uçuşta müsait koltuk kalmamıştır.</div>';
+      document.getElementById('passenger-form').querySelector('button[type="submit"]').disabled = true;
+      return;
+    }
+
     const qtySelect = document.getElementById('quantity');
     const maxQty = Math.min(9, flightData.seats_available);
     for (let i = 1; i <= maxQty; i++) {

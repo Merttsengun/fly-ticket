@@ -17,9 +17,9 @@
 <div class="admin-layout">
   <aside class="sidebar">
     <nav>
-      <a href="#" class="active" id="tab-flights" onclick="showTab('flights');return false">&#9992; Uçuşlar</a>
-      <a href="#" id="tab-tickets" onclick="showTab('tickets');return false">&#127903; Biletler</a>
-      <a href="#" id="tab-airlines" onclick="showTab('airlines');return false">&#127968; Firmalar</a>
+      <a href="#" class="active" id="tab-flights" onclick="showTab(event,'flights')">&#9992; Uçuşlar</a>
+      <a href="#" id="tab-tickets" onclick="showTab(event,'tickets')">&#127903; Biletler</a>
+      <a href="#" id="tab-airlines" onclick="showTab(event,'airlines')">&#127968; Firmalar</a>
     </nav>
   </aside>
 
@@ -217,10 +217,14 @@
     location.href = 'admin-login.html';
   });
 
-  function showTab(tab) {
+  function showTab(e, tab) {
+    e.preventDefault();
+    // Tüm linkleri temizle, sadece tıklananı aktiflestir
+    document.querySelectorAll('.sidebar nav a').forEach(a => a.classList.remove('active'));
+    e.currentTarget.classList.add('active');
+    // İçerik panellerini göster/gizle
     ['flights','tickets','airlines'].forEach(t => {
       document.getElementById(t + '-tab').style.display = tab === t ? 'block' : 'none';
-      document.getElementById('tab-' + t).classList.toggle('active', tab === t);
     });
     if (tab === 'tickets') loadTickets();
     if (tab === 'airlines') loadAirlines();
@@ -304,7 +308,11 @@
     document.getElementById('f-price').value  = f.price;
     document.getElementById('f-seats').value  = f.seats_total;
 
-    const toLocal = s => new Date(s).toISOString().slice(0, 16);
+    const toLocal = s => {
+      const d = new Date(s);
+      d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+      return d.toISOString().slice(0, 16);
+    };
     document.getElementById('f-dep').value = toLocal(f.departure_time);
     document.getElementById('f-arr').value = toLocal(f.arrival_time);
 

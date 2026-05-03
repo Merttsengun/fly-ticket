@@ -36,7 +36,9 @@ async function runMigrations() {
     'ALTER TABLE tickets ADD UNIQUE KEY uq_flight_seat (flight_id, seat_number)',
   ];
   for (const sql of migrations) {
-    await db.query(sql).catch(e => { if (e.code !== 'ER_DUP_FIELDNAME') throw e; });
+    await db.query(sql).catch(e => {
+      if (e.code !== 'ER_DUP_FIELDNAME' && e.code !== 'ER_DUP_KEYNAME') throw e;
+    });
   }
   console.log('Migrations OK.');
 }

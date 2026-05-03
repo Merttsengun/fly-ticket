@@ -171,6 +171,7 @@ input:focus, select:focus {
 .btn-sm { padding: 0.4rem 0.85rem; font-size: 0.85rem; }
 .btn-full { width: 100%; }
 
+
 /* ── RESULTS ── */
 .results-wrapper {
   max-width: 860px;
@@ -376,6 +377,10 @@ input:focus, select:focus {
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+  background: transparent;
+  padding: 0;
+  height: auto;
+  box-shadow: none;
 }
 
 .sidebar nav a {
@@ -395,7 +400,8 @@ input:focus, select:focus {
   color: #e2e8f0;
 }
 
-.sidebar nav a.active {
+.sidebar nav a.active,
+.sidebar nav a.active:hover {
   background: var(--primary);
   color: #fff;
   font-weight: 600;
