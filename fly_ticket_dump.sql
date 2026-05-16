@@ -124,7 +124,7 @@ CREATE TABLE `flights` (
   UNIQUE KEY `uq_arrival_slot` (`arrival_city_id`,`arrival_hour_slot`),
   CONSTRAINT `flights_ibfk_1` FOREIGN KEY (`departure_city_id`) REFERENCES `cities` (`id`),
   CONSTRAINT `flights_ibfk_2` FOREIGN KEY (`arrival_city_id`) REFERENCES `cities` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=23 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=26 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -133,7 +133,7 @@ CREATE TABLE `flights` (
 
 LOCK TABLES `flights` WRITE;
 /*!40000 ALTER TABLE `flights` DISABLE KEYS */;
-INSERT INTO `flights` (`id`, `flight_number`, `departure_city_id`, `arrival_city_id`, `departure_time`, `arrival_time`, `price`, `seats_total`, `seats_available`, `created_at`, `airline_id`) VALUES (15,'DNM1',2,12,'2026-05-16 15:21:00','2026-05-16 18:21:00',1000.00,100,93,'2026-05-03 12:22:12',2),(17,'dnm22',9,13,'2026-05-10 00:05:00','2026-05-10 02:07:00',1000.00,100,93,'2026-05-03 19:04:13',1),(18,'qweqw123123',5,13,'2026-05-03 23:08:00','2026-05-04 00:10:00',1000.00,100,97,'2026-05-03 19:08:50',3),(19,'qweqwe213123',1,66,'2026-05-09 00:11:00','2026-05-09 03:13:00',5000.00,5,0,'2026-05-03 19:09:29',3),(20,'qweqweqwe123123',48,7,'2026-05-04 00:31:00','2026-05-04 01:32:00',20.00,100,99,'2026-05-03 19:29:49',3),(21,'deneme123',69,71,'2026-05-15 01:56:00','2026-05-15 04:01:00',1000.00,100,100,'2026-05-04 21:57:41',4),(22,'qweqwe123123213',9,12,'2026-05-10 02:59:00','2026-05-10 05:59:00',1000.00,100,100,'2026-05-04 21:59:48',NULL);
+INSERT INTO `flights` (`id`, `flight_number`, `departure_city_id`, `arrival_city_id`, `departure_time`, `arrival_time`, `price`, `seats_total`, `seats_available`, `created_at`, `airline_id`) VALUES (15,'DNM1',2,12,'2026-05-16 15:21:00','2026-05-16 18:21:00',1000.00,100,93,'2026-05-03 12:22:12',2),(17,'dnm22',9,13,'2026-05-10 00:05:00','2026-05-10 02:07:00',1000.00,100,93,'2026-05-03 19:04:13',1),(18,'qweqw123123',5,13,'2026-05-03 23:08:00','2026-05-04 00:10:00',1000.00,100,97,'2026-05-03 19:08:50',3),(19,'qweqwe213123',1,66,'2026-05-09 00:11:00','2026-05-09 03:13:00',5000.00,5,0,'2026-05-03 19:09:29',3),(20,'qweqweqwe123123',48,7,'2026-05-04 00:31:00','2026-05-04 01:32:00',20.00,100,99,'2026-05-03 19:29:49',3),(21,'deneme123',69,71,'2026-05-15 01:56:00','2026-05-15 04:01:00',1000.00,100,100,'2026-05-04 21:57:41',4),(22,'qweqwe123123213',9,12,'2026-05-10 02:59:00','2026-05-10 05:59:00',1000.00,100,100,'2026-05-04 21:59:48',2),(23,'qwe',2,69,'2026-05-16 18:32:00','2026-05-16 19:35:00',1000.00,100,100,'2026-05-16 13:32:28',4),(24,'asd123',8,26,'2026-06-18 18:32:00','2026-06-18 19:33:00',1000.00,100,100,'2026-05-16 13:33:09',4),(25,'UCS123',35,34,'2026-06-30 16:35:00','2026-06-30 19:38:00',3000.00,100,100,'2026-05-16 13:35:35',1);
 /*!40000 ALTER TABLE `flights` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -209,4 +209,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-05-16 16:16:28
+-- Dump completed on 2026-05-16 16:38:47

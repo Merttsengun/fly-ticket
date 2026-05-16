@@ -42,6 +42,7 @@ router.get('/', async (req, res) => {
     `;
     const params = [];
 
+    if (!showAll) { sql += ' AND f.departure_time >= NOW()'; }
     if (from)    { sql += ' AND f.departure_city_id = ?'; params.push(from); }
     if (to)      { sql += ' AND f.arrival_city_id = ?';   params.push(to); }
     if (date)    { sql += ' AND DATE(f.departure_time) = ?'; params.push(date); }
