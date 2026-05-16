@@ -4,3 +4,4 @@ backend/.env
 *.log
 plan.md
 CLAUDE.md
+.claude/
